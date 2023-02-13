@@ -43,11 +43,12 @@ def import_LGR(file):
         skipfooter=283
     )
 
-    time_column = ccia_df.columns[0]
-    CO2_column = ccia_df.columns[9]
-    ccia_df[time_column] = pd.to_datetime(ccia_df[time_column])
+    col_names = [a.lstrip() for a in ccia_df.columns]
+    ccia_df.columns = col_names
+    ccia_df['Time'] = pd.to_datetime(ccia_df['Time'])
 
-    return ccia_df, time_column, CO2_column
+
+    return ccia_df
 
 def convert_dates(df):
     '''Convert the dates in date_tiem column from LabView to EST.

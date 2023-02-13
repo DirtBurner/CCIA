@@ -33,14 +33,16 @@ ccia_file = 'ccia_25Jan2023_f0005.txt'
 
 # %%
 db_df = dblgr.import_DB('DB-2272-20230126.txt')
-ccia_df, time_column, CO2_column = dblgr.import_LGR('ccia_25Jan2023_f0005.txt')
+ccia_df = dblgr.import_LGR('ccia_25Jan2023_f0005.txt')
 
 #Mask the run for the only the data from the experimental time (between begin and end)
 #We may be able to fold this into a function as well. 
 begin = pd.to_datetime('01/25/23 20:58:00')
 end = pd.to_datetime('01/25/23 23:58:00')
-ccia_run_df = ccia_df.loc[(ccia_df[time_column]>begin) & (ccia_df[time_column]<end)]
+ccia_run_df = ccia_df.loc[(ccia_df['Time']>begin) & (ccia_df['Time']<end)]
+db_run_df = db_df.loc[(db_df['Time']>begin) & (db_df['Time']<end)]
 print(db_df.head())
+print(ccia_df.columns[0:15]) #There are 105 columns of data in ccia_df. It is useful to know the first few.
 
 # %% [markdown]
 # ## Plot the data
@@ -49,13 +51,10 @@ print(db_df.head())
 # %%
 #Make a plot, add time offset with pd.Timedelta function
 #(This cell will be eventually made into one line of code when we decide what we want to plot.)
-time_column = ccia_df.columns[0]
-CO2_column = ccia_df.columns[9]
-print(time_column)
 fig1, ax1 = plt.subplots(nrows=3, ncols=1)
-ax1[0].plot(ccia_df[time_column] - pd.Timedelta(hours=12), ccia_df[CO2_column])
+ax1[0].plot(ccia_df['Time'] - pd.Timedelta(hours=12), ccia_df['[CO2]_ppm'])
 ax1[1].plot(db_df['Time'], db_df['pCO2'], color='peru')
 ax1[1].set_ylim([0, 10000])
-ax1[2].plot(ccia_df[time_column] - pd.Timedelta(hours=12), ccia_df[CO2_column])
+ax1[2].plot(ccia_df['Time'] - pd.Timedelta(hours=12), ccia_df['[CO2]_ppm'])
 ax1[2].plot(db_df['Time'], db_df['pCO2'], color='peru')
 
