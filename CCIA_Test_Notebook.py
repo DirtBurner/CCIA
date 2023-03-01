@@ -32,99 +32,57 @@ ccia_file = 'ccia_16Feb2023_f0000.txt'
 # Finally, the last run prints out the first 5 rows of the Dirtburner data. 
 
 # %%
-db_df = dblgr.import_DB(DB_file)
+#Import the data
 ccia_df = dblgr.import_LGR(ccia_file)
-print(db_df.head())
-print(type(db_df['Time'][0]))
-#Mask the run for the only the data from the experimental time (between begin and end)
-#We may be able to fold this into a function as well. 
-begin = pd.to_datetime('2023-02-16 11:00:00')
-end = pd.to_datetime('2023-02-16 13:00:00')
-ccia_run_df = ccia_df.loc[(ccia_df['Time']>begin) & (ccia_df['Time']<end)]
-db_run_df = db_df.loc[(db_df['Time']>begin) & (db_df['Time']<end)]
-print(db_run_df.head())
-print(ccia_df.shape)
-print(ccia_run_df.columns[0:15]) #There are 105 columns of data in ccia_df. It is useful to know the first few.
+db_df = dblgr.import_DB(DB_file)
+
+#Set beginning and end times of the data you wish to view and analyze
+begin = '2023-02-16 11:00:00'
+end = '2023-02-16 13:00:00'
 
 # %% [markdown]
 # ## Plot the data
-# This cell plots the data in three stacked plots. The top shows the LGR data, the middle shows the Dirtburner data, and the bottom plots them both. These are time series - pCO2 plotted on time. There is a difference in the heights of the curves (see bottom plot) and a slight offset in the peaks. The offset could be because the example doesn't have the exact time offset between the instruments (see the line of code that plots on `ax1[2]`, the bottom axes). However, this is a useful observation because there should be a small time offset between the two instruments as it takes some time for the gas to cross from the Dirtburner CO<sub>2</sub> analyzer to the LGR analyzer. We can use the Tmax function to calculate the actualy time offset in both runs. 
+# This cell plots the data in three stacked plots. The top shows the LGR data, the middle shows the Dirtburner data, and the bottom plots them both. These are time series - pCO2 plotted on time. There is a difference in the heights of the curves (see bottom plot) and a slight offset in the peaks. The offset could be because the example doesn't have the exact time offset between the instruments (see the line of code that plots on `ax1[2]`, the bottom axes). However, this is a useful observation because there should be a small time offset between the two instruments as it takes some time for the gas to cross from the Dirtburner CO<sub>2</sub> analyzer to the LGR analyzer. We can use the Tmax function to calculate the actual time offset in both runs. 
 
 # %%
-#Make a plot, add time offset with pd.Timedelta function
-#(This cell will be eventually made into one line of code when we decide what we want to plot.)
+CO2_view = dblgr.view_concentrations(ccia_df, db_df, begin, end, 0)
 
-del_time = pd.Timedelta(hours=0) #This accounts for any difference in times between the computers.
-fig1, ax1 = plt.subplots(nrows=3, ncols=1, sharex=True)
-ax1[0].plot(ccia_run_df['Time'] - del_time, ccia_run_df['[CO2]_ppm'])
-ax1[1].plot(db_run_df['Time'], db_run_df['pCO2'], color='peru')
-ax1[2].plot(ccia_run_df['Time'] - del_time, ccia_run_df['[CO2]_ppm'])
-ax1[2].plot(db_run_df['Time'], db_run_df['pCO2'], color='peru')
-
-
-# %%
-print(ccia_run_df.head())
-
+# %% [markdown]
+# ## Analyze the Data
+#
+# Several questions arose from the first few runs. How do we assess the open split versus the metering valve to acquire isotope data? Even though the trends between instruments are the same, how do we account for the differences in absolute concentration measured by both of them? Ultimately, which technique is best to supply real-time isotope data that may inform sampling of the gas stream for $^{14}C $ data?
+#
+# To get at most of these questions, we have to probe and analyze the data. Remember, the LGR data, for example, has 105 individual data streams (columns) and we have only accessed 2 so far above. Now we need to probe the isotope data and start to think about statistical tests as well as qualitative tests that will help us understand these questions. We also need to compare these data between different runs and not necessarily between instruments. 
+#
+# Given that the data streams above qualitatively match, we will use mainly LGR data below. Using the LGR data ensures that the isotope and concentration data match point for point because they were recorded in the same instrument. It also simplifies comparisons in terms of time, however we will need to use elapsed time. We may need to access temperature too, if timings are not well recorded in the run sheets, but we'll cross that bridge when we come to it. Crossing 2 data streams is not always easy, in fact it is almost always troublesome.
 
 # %%
-def import_DB(file):
-    db_df = pd.read_csv(
-        file,
-        delimiter='\t',
-        header=None, 
-        names=[
-            'Time',
-            'pCO2',
-            'Temperature',
-            'He_main',
-            'He_side',
-            'O2'
-        ]
-    )
-    print('Time elapsed = ', (max(db_df['Time']) - min(db_df['Time']))/60, ' minutes')
-    db_df = convert_dates(db_df)
+#Plot the isotope trends from two runs
 
-    return db_df
+#Import the two runs you want to compare, and name the dataframes descriptively to avoid confusion:
+db_2274_ccia_df = dblgr.import_LGR('ccia_10Feb2023_f0000.txt')
+db_2275_ccia_df = dblgr.import_LGR('ccia_16Feb2023_f0000.txt')
 
-def convert_dates(df):
-    '''Convert the dates in date_tiem column from LabView to EST.
-    '''
-    #debug('Operating in debug mode.', '\n')
-   # set time zone relative to GMT
-    dh = -5  # EST
-    dy = -66  # to deal with LabView's 65 year and 40 week future offset
+#Define beginning and end of each run:
+begin_2275 = begin #(These should be the same as the ones used up above, change accordingly if you are using different runs!)
+end_2275 = end
+begin_2274 = pd.to_datetime('2023-02-10 09:05:00')
+end_2274 = pd.to_datetime('2023-02-10 11:34:00')
 
-    # make 'date_time' column into timestamp
-    #- pd.Timedelta(weeks=dy*52-12, hours=dh)
-    df['Time'] = [pd.to_datetime(time, unit='s', origin='unix') for time in db_df['Time']] 
-    print(df['Time'][0:5])
-    a = [timestamp.strftime('%Y-%m-%d %H:%M:%S') for timestamp in df['Time']]
-    print(a[0:5])
-    # now get it into a meaningful time
-    df["Time"] = pd.to_datetime(a) 
-    
-    return df
+#Mask the data from each run that you want to visualize
+db_2274_ccia_run_df = db_2274_ccia_df.loc[(db_2274_ccia_df['Time']>begin_2274) & (db_2274_ccia_df['Time']<end_2274)]
+db_2275_ccia_run_df = db_2275_ccia_df.loc[(db_2275_ccia_df['Time']>begin_2275) & (db_2275_ccia_df['Time']<end_2275)]
 
-test_df = import_DB(DB_file)
-print(test_df.head())
-print(type(test_df['Time'][0]))
+db_2274_ccia_run_df['Elapsed Time'] = [pd.Timedelta(time-min(db_2274_ccia_run_df['Time']), unit='seconds') for time in db_2274_ccia_run_df['Time']] 
+db_2275_ccia_run_df['Elapsed Time'] = [pd.Timedelta(time-min(db_2275_ccia_run_df['Time']), unit='seconds') for time in db_2275_ccia_run_df['Time']] 
 
-# %%
-t_df = pd.read_csv(
-        DB_file,
-        delimiter='\t',
-        header=None, 
-        names=[
-            'Time',
-            'pCO2',
-            'Temperature',
-            'He_main',
-            'He_side',
-            'O2'
-        ]
-    )
 
-print('Time elapsed = ', (max(t_df['Time']) - min(t_df['Time']))/60, ' minutes')
-print(type(pd.to_datetime(t_df['Time'][0])))
-t_df['Time'] = pd.to_datetime(t_df['Time'], origin='unix', unit='s') + pd.Timedelta(weeks=-66*52-12+1/7, hours=-6)
-print(t_df.head())
+#Plot the data on those elapsed time axes:
+db_2274_ccia_run_df.plot(x='Elapsed Time', y='d13C', color='lavender', ylabel=r'$\delta ^{13}C$, relative')
+db_2275_ccia_run_df.plot(x='Elapsed Time', y='d13C', color='lightgreen', ylabel=r'$\delta ^{13}C$, relative')
+
+
+
+# %% [markdown]
+# ## Interpretation
+# Somehow, the masking of run DB-2274 is not working and I am not sure why. That is posing the problem of no data in the top plot above. Furthermore, the elapsed time axis is posing problems because it limits plotting to pandas rather than in matplotlib which evidently cannot handle pandas timestamps. I will continue to troubleshoot these problems, but the goal was to get both plots on the same axes, which is not possible in pandas.plot(). 
