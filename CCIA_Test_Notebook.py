@@ -66,7 +66,7 @@ db_2275_ccia_df = dblgr.import_LGR('ccia_16Feb2023_f0000.txt')
 #Define beginning and end of each run:
 begin_2275 = begin #(These should be the same as the ones used up above, change accordingly if you are using different runs!)
 end_2275 = end
-begin_2274 = pd.to_datetime('2023-02-10 09:05:00')
+begin_2274 = pd.to_datetime('2023-02-10 09:34:00')
 end_2274 = pd.to_datetime('2023-02-10 11:34:00')
 
 #Mask the data from each run that you want to visualize
@@ -85,4 +85,4 @@ db_2275_ccia_run_df.plot(x='Elapsed Time', y='d13C', color='lightgreen', ylabel=
 
 # %% [markdown]
 # ## Interpretation
-# Somehow, the masking of run DB-2274 is not working and I am not sure why. That is posing the problem of no data in the top plot above. Furthermore, the elapsed time axis is posing problems because it limits plotting to pandas rather than in matplotlib which evidently cannot handle pandas timestamps. I will continue to troubleshoot these problems, but the goal was to get both plots on the same axes, which is not possible in pandas.plot(). 
+# There are some issues with the plotting. Elapsed time as an x-axis is posing problems because it limits plotting to pandas rather than in matplotlib which evidently cannot handle pandas timestamps. I will continue to troubleshoot this problem, but the goal was to get both plots on the same axes, which is not possible in pandas.plot(). I think I will need to convert the pandas Timedelta generator to floating point seconds to plot each on the same plot using matplotlib. But, these two runs are not the best comparison to one another as the mass in DB-2274 was likely too small to register a strong isotope signal. These two plots suggest that plotting the concentration may also be necessary to do for comparison of runs as the minima in each plot do not match. 
