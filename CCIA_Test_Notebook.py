@@ -82,20 +82,39 @@ db_2274_ccia_run_df.loc[:, 'Elapsed Time'] = [pd.Timedelta(time-db_2274_ccia_run
 db_2275_ccia_run_df.loc[:, 'Elapsed Time'] = [pd.Timedelta(time-db_2275_ccia_run_df['Time'].iloc[0], unit='seconds').total_seconds() for time in db_2275_ccia_run_df['Time']]
 print('Step 3 completed at ', datetime.now())
 
-#Plot the data on those elapsed time axes:
+#Plot the d13C data on those elapsed time axes:
 fig2, ax2 = plt.subplots()
-ax2.plot(db_2274_ccia_run_df['Elapsed Time'], db_2274_ccia_run_df['d13C'], color='lavender')
+ax2.plot(db_2274_ccia_run_df['Elapsed Time'], db_2274_ccia_run_df['d13C'], color='gold')
 ax2.plot(db_2275_ccia_run_df['Elapsed Time'], db_2275_ccia_run_df['d13C'], color='lightgreen')
 #Set up legend artists
-DB2274_line = mlines.Line2D([], [], color='lavender', label=r'DB-2274, 211$\mu$mol, 15.03 Torr')
+DB2274_line = mlines.Line2D([], [], color='gold', label=r'DB-2274, 211$\mu$mol, 15.03 Torr')
 DB2275_line = mlines.Line2D([], [], color='lightgreen', label=r'DB-2275, 227$\mu$mol, 8 Torr')
 plt.legend(handles=[DB2274_line, DB2275_line])
 ax2.set(ylabel=r'$\delta ^{13}C$, relative', xlabel='Elapsed time, s')
 print('Step 4 completed at ', datetime.now())
 
-plt.savefig('C:/Users/brosenheim/Box/UDrive_brosenheim/My_Documents/Research/Laboratory/LGR CCIA/DB2274_DB2275_ChokeValveComparison.svg')
+#plt.savefig('C:/Users/brosenheim/Box/UDrive_brosenheim/My_Documents/Research/Laboratory/LGR CCIA/DB2274_DB2275_ChokeValveComparison.svg')
 
+
+# %%
+#Plot the d13C data on those elapsed time axes:
+fig3, ax3 = plt.subplots()
+ax3.plot(db_2274_ccia_run_df['Elapsed Time'], db_2274_ccia_run_df['[CO2]_ppm'], color='gold')
+ax3.plot(db_2275_ccia_run_df['Elapsed Time'], db_2275_ccia_run_df['[CO2]_ppm'], color='lightgreen')
+#Set up legend artists
+DB2274_line = mlines.Line2D([], [], color='gold', label=r'DB-2274, 211$\mu$mol, 15.03 Torr')
+DB2275_line = mlines.Line2D([], [], color='lightgreen', label=r'DB-2275, 227$\mu$mol, 8 Torr')
+plt.legend(handles=[DB2274_line, DB2275_line])
+ax3.set(ylabel=r'[CO$_2$], ppm', xlabel='Elapsed time, s')
+
+#plt.savefig('C:/Users/brosenheim/Box/UDrive_brosenheim/My_Documents/Research/Laboratory/LGR CCIA/DB2274_DB2275_ChokeValveComparison_concentrations.svg')
 
 # %% [markdown]
 # ## Interpretation
 # Surprise, surprise! The biggest difference between these two runs was that we choked the valve down halfway for run `DB-2275`. That seemed like a large change, but the frame work of *Poiseuille's Law* suggested that it was actually quite a small change given the large pressure at the inlet (flow controller side) of the instrumentation. However, we do these experiments for a reason. The data show that there was a profound effect on both the sensitivity (ability to show isotope change of two materials) and the isotope ratio. The former is surprising given the *Poiseuille's Law* framework. The latter is bizarre and needs more experimentation to iron out. But ultimately, the LGR is sensitive to small changes in the choke valve configuration. 
+#
+# ### *Isotope data*
+# The isotope data shows that both the cellulose (first 2 peaks) and the calcium carbonate (last peak) are isotopically lighter than the carrier gas CO<sub>2</sub>. This likely means that the carrier gas CO<sub>2</sub> is near or slightly greater than the value of PDB, the international standard for carbon isotope values. This is a valuable piece of information that we will try to improve as the semester moves along. One can see the negative deviation in the isotope values of both runs, although it is smaller than the noise level for run DB-2274. Future experiments should choke the outlet valve further and compare to the open split with the choke valve fully open. 
+#
+# ### *Concentration data*
+# The concentration data are less noisy than the isotope data. The peaks line up nicely once the starting time for each reaction is accurate. Similarly to the isotope data, the baseline is shifted in the run where we choked the outlet valve. In this case, the baseline is elevated. Does this make sense? We did not change the rate of supply of products from the reaction, nor did we change the reaction. Effectively, by decreasing the pump conductance by choking the outlet valve, we increased the pressure and the residence time of CO<sub>2</sub> molecules in the optical cell. However, the same can be said of He atoms. So, how did the concentrations increase for run DB-2275? We will need to see how the open split affects this moving forward in order to better understand it. A question of high importance is whether this elevated concentration baseline relates to the decreased isotope baseline in run DB-2275. 
