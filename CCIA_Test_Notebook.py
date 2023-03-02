@@ -7,7 +7,10 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from datetime import datetime
+import matplotlib.lines as mlines
 import DB_LGR_py as dblgr
+
 
 # %% [markdown]
 # ## Entering the file names
@@ -62,27 +65,37 @@ CO2_view = dblgr.view_concentrations(ccia_df, db_df, begin, end, 0)
 #Import the two runs you want to compare, and name the dataframes descriptively to avoid confusion:
 db_2274_ccia_df = dblgr.import_LGR('ccia_10Feb2023_f0000.txt')
 db_2275_ccia_df = dblgr.import_LGR('ccia_16Feb2023_f0000.txt')
+print('Step 1 completed at ', datetime.now())
 
 #Define beginning and end of each run:
 begin_2275 = begin #(These should be the same as the ones used up above, change accordingly if you are using different runs!)
 end_2275 = end
-begin_2274 = pd.to_datetime('2023-02-10 09:34:00')
+begin_2274 = pd.to_datetime('2023-02-10 09:59:00')
 end_2274 = pd.to_datetime('2023-02-10 11:34:00')
+print('Step 2 completed at ', datetime.now())
 
 #Mask the data from each run that you want to visualize
 db_2274_ccia_run_df = db_2274_ccia_df.loc[(db_2274_ccia_df['Time']>begin_2274) & (db_2274_ccia_df['Time']<end_2274)]
 db_2275_ccia_run_df = db_2275_ccia_df.loc[(db_2275_ccia_df['Time']>begin_2275) & (db_2275_ccia_df['Time']<end_2275)]
-
-db_2274_ccia_run_df['Elapsed Time'] = [pd.Timedelta(time-min(db_2274_ccia_run_df['Time']), unit='seconds') for time in db_2274_ccia_run_df['Time']] 
-db_2275_ccia_run_df['Elapsed Time'] = [pd.Timedelta(time-min(db_2275_ccia_run_df['Time']), unit='seconds') for time in db_2275_ccia_run_df['Time']] 
-
+print('Step 2.5 completed at ', datetime.now())
+db_2274_ccia_run_df.loc[:, 'Elapsed Time'] = [pd.Timedelta(time-db_2274_ccia_run_df['Time'].iloc[0], unit='seconds').total_seconds() for time in db_2274_ccia_run_df['Time']]
+db_2275_ccia_run_df.loc[:, 'Elapsed Time'] = [pd.Timedelta(time-db_2275_ccia_run_df['Time'].iloc[0], unit='seconds').total_seconds() for time in db_2275_ccia_run_df['Time']]
+print('Step 3 completed at ', datetime.now())
 
 #Plot the data on those elapsed time axes:
-db_2274_ccia_run_df.plot(x='Elapsed Time', y='d13C', color='lavender', ylabel=r'$\delta ^{13}C$, relative')
-db_2275_ccia_run_df.plot(x='Elapsed Time', y='d13C', color='lightgreen', ylabel=r'$\delta ^{13}C$, relative')
+fig2, ax2 = plt.subplots()
+ax2.plot(db_2274_ccia_run_df['Elapsed Time'], db_2274_ccia_run_df['d13C'], color='lavender')
+ax2.plot(db_2275_ccia_run_df['Elapsed Time'], db_2275_ccia_run_df['d13C'], color='lightgreen')
+#Set up legend artists
+DB2274_line = mlines.Line2D([], [], color='lavender', label=r'DB-2274, 211$\mu$mol, 15.03 Torr')
+DB2275_line = mlines.Line2D([], [], color='lightgreen', label=r'DB-2275, 227$\mu$mol, 8 Torr')
+plt.legend(handles=[DB2274_line, DB2275_line])
+ax2.set(ylabel=r'$\delta ^{13}C$, relative', xlabel='Elapsed time, s')
+print('Step 4 completed at ', datetime.now())
 
+plt.savefig('C:/Users/brosenheim/Box/UDrive_brosenheim/My_Documents/Research/Laboratory/LGR CCIA/DB2274_DB2275_ChokeValveComparison.svg')
 
 
 # %% [markdown]
 # ## Interpretation
-# There are some issues with the plotting. Elapsed time as an x-axis is posing problems because it limits plotting to pandas rather than in matplotlib which evidently cannot handle pandas timestamps. I will continue to troubleshoot this problem, but the goal was to get both plots on the same axes, which is not possible in pandas.plot(). I think I will need to convert the pandas Timedelta generator to floating point seconds to plot each on the same plot using matplotlib. But, these two runs are not the best comparison to one another as the mass in DB-2274 was likely too small to register a strong isotope signal. These two plots suggest that plotting the concentration may also be necessary to do for comparison of runs as the minima in each plot do not match. 
+# Surprise, surprise! The biggest difference between these two runs was that we choked the valve down halfway for run `DB-2275`. That seemed like a large change, but the frame work of *Poiseuille's Law* suggested that it was actually quite a small change given the large pressure at the inlet (flow controller side) of the instrumentation. However, we do these experiments for a reason. The data show that there was a profound effect on both the sensitivity (ability to show isotope change of two materials) and the isotope ratio. The former is surprising given the *Poiseuille's Law* framework. The latter is bizarre and needs more experimentation to iron out. But ultimately, the LGR is sensitive to small changes in the choke valve configuration. 
