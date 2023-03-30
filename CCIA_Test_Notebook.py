@@ -40,7 +40,7 @@ ccia_df = dblgr.import_LGR(ccia_file)
 db_df = dblgr.import_DB(DB_file)
 
 #Set beginning and end times of the data you wish to view and analyze
-begin = '2023-02-16 11:00:00'
+begin = '2023-02-16 10:50:00'
 end = '2023-02-16 13:00:00'
 
 # %% [markdown]
@@ -70,7 +70,7 @@ print('Step 1 completed at ', datetime.now())
 #Define beginning and end of each run:
 begin_2275 = begin #(These should be the same as the ones used up above, change accordingly if you are using different runs!)
 end_2275 = end
-begin_2274 = pd.to_datetime('2023-02-10 09:59:00')
+begin_2274 = pd.to_datetime('2023-02-10 09:52:00')
 end_2274 = pd.to_datetime('2023-02-10 11:34:00')
 print('Step 2 completed at ', datetime.now())
 
@@ -89,6 +89,7 @@ ax2.plot(db_2275_ccia_run_df['Elapsed Time'], db_2275_ccia_run_df['d13C'], color
 #Set up legend artists
 DB2274_line = mlines.Line2D([], [], color='gold', label=r'DB-2274, 211$\mu$mol, 15.03 Torr')
 DB2275_line = mlines.Line2D([], [], color='lightgreen', label=r'DB-2275, 227$\mu$mol, 8 Torr')
+plt.grid(axis='x', which='both')
 plt.legend(handles=[DB2274_line, DB2275_line])
 ax2.set(ylabel=r'$\delta ^{13}C$, relative', xlabel='Elapsed time, s')
 print('Step 4 completed at ', datetime.now())
@@ -105,6 +106,7 @@ ax3.plot(db_2275_ccia_run_df['Elapsed Time'], db_2275_ccia_run_df['[CO2]_ppm'], 
 DB2274_line = mlines.Line2D([], [], color='gold', label=r'DB-2274, 211$\mu$mol, 15.03 Torr')
 DB2275_line = mlines.Line2D([], [], color='lightgreen', label=r'DB-2275, 227$\mu$mol, 8 Torr')
 plt.legend(handles=[DB2274_line, DB2275_line])
+plt.grid(axis='x', which='both')
 ax3.set(ylabel=r'[CO$_2$], ppm', xlabel='Elapsed time, s')
 
 #plt.savefig('C:/Users/brosenheim/Box/UDrive_brosenheim/My_Documents/Research/Laboratory/LGR CCIA/DB2274_DB2275_ChokeValveComparison_concentrations.svg')
