@@ -24,8 +24,8 @@ import DB_LGR_py as dblgr
 
 # %%
 #To import data files, you need to enter their names as strings here:
-DB_file = 'DB-2275-20230216.txt'
-ccia_file = 'ccia_16Feb2023_f0000.txt'
+DB_file = 'DB-2277-20230328.txt'
+ccia_file = 'ccia_28Mar2023_f0000.txt'
 
 
 # %% [markdown]
@@ -38,10 +38,11 @@ ccia_file = 'ccia_16Feb2023_f0000.txt'
 #Import the data
 ccia_df = dblgr.import_LGR(ccia_file)
 db_df = dblgr.import_DB(DB_file)
+#print(db_df.tail())
 
 #Set beginning and end times of the data you wish to view and analyze
-begin = '2023-02-16 10:50:00'
-end = '2023-02-16 13:00:00'
+begin = '2023-03-28 8:30:00'
+end = '2023-03-28 10:30:00'
 
 # %% [markdown]
 # ## Plot the data
@@ -65,51 +66,67 @@ CO2_view = dblgr.view_concentrations(ccia_df, db_df, begin, end, 0)
 #Import the two runs you want to compare, and name the dataframes descriptively to avoid confusion:
 db_2274_ccia_df = dblgr.import_LGR('ccia_10Feb2023_f0000.txt')
 db_2275_ccia_df = dblgr.import_LGR('ccia_16Feb2023_f0000.txt')
+db_2277_ccia_df = dblgr.import_LGR('ccia_28Mar2023_f0000.txt')
+db_2278_ccia_df = dblgr.import_LGR('ccia_06Apr2023_f0001.txt')
+print(db_2278_ccia_df.head())
 print('Step 1 completed at ', datetime.now())
 
 #Define beginning and end of each run:
-begin_2275 = begin #(These should be the same as the ones used up above, change accordingly if you are using different runs!)
-end_2275 = end
+begin_2275 = pd.to_datetime('2023-02-16 10:50:00') 
+end_2275 = pd.to_datetime('2023-02-16 13:00:00')
 begin_2274 = pd.to_datetime('2023-02-10 09:52:00')
 end_2274 = pd.to_datetime('2023-02-10 11:34:00')
+begin_2277 = pd.to_datetime('2023-03-28 08:40:00')
+end_2277 = pd.to_datetime('2023-03-28 10:40:00')
+begin_2278 = pd.to_datetime('2023-04-06 10:33:00')
+end_2278 = pd.to_datetime('2023-04-06 13:00:00')
 print('Step 2 completed at ', datetime.now())
 
 #Mask the data from each run that you want to visualize
 db_2274_ccia_run_df = db_2274_ccia_df.loc[(db_2274_ccia_df['Time']>begin_2274) & (db_2274_ccia_df['Time']<end_2274)]
 db_2275_ccia_run_df = db_2275_ccia_df.loc[(db_2275_ccia_df['Time']>begin_2275) & (db_2275_ccia_df['Time']<end_2275)]
+db_2277_ccia_run_df = db_2277_ccia_df.loc[(db_2277_ccia_df['Time']>begin_2277) & (db_2277_ccia_df['Time']<end_2277)]
+db_2278_ccia_run_df = db_2278_ccia_df.loc[(db_2278_ccia_df['Time']>begin_2278) & (db_2278_ccia_df['Time']<end_2278)]
+print(db_2278_ccia_run_df.head())
 print('Step 2.5 completed at ', datetime.now())
 db_2274_ccia_run_df.loc[:, 'Elapsed Time'] = [pd.Timedelta(time-db_2274_ccia_run_df['Time'].iloc[0], unit='seconds').total_seconds() for time in db_2274_ccia_run_df['Time']]
 db_2275_ccia_run_df.loc[:, 'Elapsed Time'] = [pd.Timedelta(time-db_2275_ccia_run_df['Time'].iloc[0], unit='seconds').total_seconds() for time in db_2275_ccia_run_df['Time']]
+db_2277_ccia_run_df.loc[:, 'Elapsed Time'] = [pd.Timedelta(time-db_2277_ccia_run_df['Time'].iloc[0], unit='seconds').total_seconds() for time in db_2277_ccia_run_df['Time']]
+db_2278_ccia_run_df.loc[:, 'Elapsed Time'] = [pd.Timedelta(time-db_2278_ccia_run_df['Time'].iloc[0], unit='seconds').total_seconds() for time in db_2278_ccia_run_df['Time']]
 print('Step 3 completed at ', datetime.now())
 
 #Plot the d13C data on those elapsed time axes:
 fig2, ax2 = plt.subplots()
 ax2.plot(db_2274_ccia_run_df['Elapsed Time'], db_2274_ccia_run_df['d13C'], color='gold')
-ax2.plot(db_2275_ccia_run_df['Elapsed Time'], db_2275_ccia_run_df['d13C'], color='lightgreen')
+ax2.plot(db_2275_ccia_run_df['Elapsed Time'], db_2275_ccia_run_df['d13C'], color='darkgreen')
+ax2.plot(db_2277_ccia_run_df['Elapsed Time'], db_2277_ccia_run_df['d13C'], color='purple')
+ax2.plot(db_2278_ccia_run_df['Elapsed Time'], db_2278_ccia_run_df['d13C'], color='plum')
 #Set up legend artists
 DB2274_line = mlines.Line2D([], [], color='gold', label=r'DB-2274, 211$\mu$mol, 15.03 Torr')
-DB2275_line = mlines.Line2D([], [], color='lightgreen', label=r'DB-2275, 227$\mu$mol, 8 Torr')
+DB2275_line = mlines.Line2D([], [], color='darkgreen', label=r'DB-2275, 227$\mu$mol, 8 Torr')
+DB2277_line = mlines.Line2D([], [], color='purple', label=r'DB-2277, open split 75 mL/min')
+DB2278_line = mlines.Line2D([], [], color='plum', label=r'DB-2278, open split 125 mL/min')
 plt.grid(axis='x', which='both')
-plt.legend(handles=[DB2274_line, DB2275_line])
+plt.legend(handles=[DB2274_line, DB2275_line, DB2277_line, DB2278_line])
 ax2.set(ylabel=r'$\delta ^{13}C$, relative', xlabel='Elapsed time, s')
 print('Step 4 completed at ', datetime.now())
 
-#plt.savefig('C:/Users/brosenheim/Box/UDrive_brosenheim/My_Documents/Research/Laboratory/LGR CCIA/DB2274_DB2275_ChokeValveComparison.svg')
+#plt.savefig('C:/Users/brosenheim/Box/UDrive_brosenheim/My_Documents/Research/Laboratory/LGR CCIA/DB2274_DB2275_DB_2277_ChokeValve_OpenSplitComparison.svg')
 
 
 # %%
 #Plot the d13C data on those elapsed time axes:
 fig3, ax3 = plt.subplots()
 ax3.plot(db_2274_ccia_run_df['Elapsed Time'], db_2274_ccia_run_df['[CO2]_ppm'], color='gold')
-ax3.plot(db_2275_ccia_run_df['Elapsed Time'], db_2275_ccia_run_df['[CO2]_ppm'], color='lightgreen')
-#Set up legend artists
-DB2274_line = mlines.Line2D([], [], color='gold', label=r'DB-2274, 211$\mu$mol, 15.03 Torr')
-DB2275_line = mlines.Line2D([], [], color='lightgreen', label=r'DB-2275, 227$\mu$mol, 8 Torr')
-plt.legend(handles=[DB2274_line, DB2275_line])
+ax3.plot(db_2275_ccia_run_df['Elapsed Time'], db_2275_ccia_run_df['[CO2]_ppm'], color='darkgreen')
+ax3.plot(db_2277_ccia_run_df['Elapsed Time'], db_2277_ccia_run_df['[CO2]_ppm'], color='purple')
+ax3.plot(db_2278_ccia_run_df['Elapsed Time'], db_2278_ccia_run_df['[CO2]_ppm'], color='plum')
+
+plt.legend(handles=[DB2274_line, DB2275_line, DB2277_line, DB2278_line])
 plt.grid(axis='x', which='both')
 ax3.set(ylabel=r'[CO$_2$], ppm', xlabel='Elapsed time, s')
 
-#plt.savefig('C:/Users/brosenheim/Box/UDrive_brosenheim/My_Documents/Research/Laboratory/LGR CCIA/DB2274_DB2275_ChokeValveComparison_concentrations.svg')
+#plt.savefig('C:/Users/brosenheim/Box/UDrive_brosenheim/My_Documents/Research/Laboratory/LGR CCIA/DB2274_DB2275_DB2277_ChokeValveComparison_opensplit_concentrations.svg')
 
 # %% [markdown]
 # ## Interpretation

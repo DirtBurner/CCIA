@@ -122,3 +122,19 @@ def view_concentrations(ccia_df, db_df, begin_timestamp, end_timestamp, time_off
     big_ax1.set(ylabel=r'pCO$_{2}$, ppm')
 
     return ax1
+
+def compare_CCIA(runs, timestamps, colors):
+
+    fig, ax = plt.subplots(nrows=1, ncols=1)
+    for j, run in enumerate(runs):
+        #import each run
+        df = import_LGR(run)
+        #set up begin and end
+        begin = pd.to_datetime(timestamps[j][0]) 
+        end = pd.to_datetime(timestamps[j][1])
+        masked_df = df.loc[(df['Time']>begin) & (df['Time']<end)]
+        #Calculate elapsed time
+        masked_df.loc[:, 'Elapsed Time'] = [pd.Timedelta(time-masked_df['Time'].iloc[0], unit='seconds').total_seconds() for time in masked_df['Time']]
+        ax.plot(masked_df['Elapsed Time'], masked_df['d13C'], color=colors[j])
+    
+    return ax
