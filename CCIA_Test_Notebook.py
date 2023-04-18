@@ -111,7 +111,7 @@ plt.legend(handles=[DB2274_line, DB2275_line, DB2277_line, DB2278_line])
 ax2.set(ylabel=r'$\delta ^{13}C$, relative', xlabel='Elapsed time, s')
 print('Step 4 completed at ', datetime.now())
 
-#plt.savefig('C:/Users/brosenheim/Box/UDrive_brosenheim/My_Documents/Research/Laboratory/LGR CCIA/DB2274_DB2275_DB_2277_ChokeValve_OpenSplitComparison.svg')
+#plt.savefig('C:/Users/brosenheim/Box/UDrive_brosenheim/My_Documents/Research/Laboratory/LGR CCIA/DB2274-5-7-8_ChokeValve_OpenSplitComparison.svg')
 
 
 # %%
@@ -126,7 +126,7 @@ plt.legend(handles=[DB2274_line, DB2275_line, DB2277_line, DB2278_line])
 plt.grid(axis='x', which='both')
 ax3.set(ylabel=r'[CO$_2$], ppm', xlabel='Elapsed time, s')
 
-#plt.savefig('C:/Users/brosenheim/Box/UDrive_brosenheim/My_Documents/Research/Laboratory/LGR CCIA/DB2274_DB2275_DB2277_ChokeValveComparison_opensplit_concentrations.svg')
+#plt.savefig('C:/Users/brosenheim/Box/UDrive_brosenheim/My_Documents/Research/Laboratory/LGR CCIA/DB2274-5-7-8_ChokeValveComparison_opensplit_concentrations.svg')
 
 # %% [markdown]
 # ## Interpretation
@@ -137,3 +137,33 @@ ax3.set(ylabel=r'[CO$_2$], ppm', xlabel='Elapsed time, s')
 #
 # ### *Concentration data*
 # The concentration data are less noisy than the isotope data. The peaks line up nicely once the starting time for each reaction is accurate. Similarly to the isotope data, the baseline is shifted in the run where we choked the outlet valve. In this case, the baseline is elevated. Does this make sense? We did not change the rate of supply of products from the reaction, nor did we change the reaction. Effectively, by decreasing the pump conductance by choking the outlet valve, we increased the pressure and the residence time of CO<sub>2</sub> molecules in the optical cell. However, the same can be said of He atoms. So, how did the concentrations increase for run DB-2275? We will need to see how the open split affects this moving forward in order to better understand it. A question of high importance is whether this elevated concentration baseline relates to the decreased isotope baseline in run DB-2275. 
+
+# %%
+#Use function to compare runs. Create lists of run files, timestamps, colors (that you want to plot), and legend labels, making sure they are in the same order
+runs = ['ccia_10Feb2023_f0000.txt','ccia_16Feb2023_f0000.txt','ccia_28Mar2023_f0000.txt','ccia_06Apr2023_f0001.txt']
+timestamps = [(begin_2274, end_2274), (begin_2275, end_2275), (begin_2277, end_2277), (begin_2278, end_2278)]
+colors = ['gold', 'darkgreen', 'purple', 'plum']
+legend_labels = [r'DB-2274, 211$\mu$mol, 15.03 Torr', r'DB-2275, 227$\mu$mol, 8 Torr', r'DB-2277, open split 75 mL/min', r'DB-2278, open split 125 mL/min']
+ax1 = dblgr.compare_CCIA(runs, timestamps, colors, legend_labels)
+
+
+# %%
+#Concentration plot with colors for isotope values
+df = db_2278_ccia_run_df
+carrier_gas = -70
+#Calculate the concentration of each point based on input of baseline concentration - two functions
+def frac_calc(CO2_conc, bkgnd_conc):
+    frac_sam = (CO2_conc-bkgnd_conc)/CO2_conc
+
+    return frac_sam
+
+def delta_calc(delta_meas, baseline, f_sam):
+    delta_sam = (delta_meas - baseline)/f_sam - baseline
+
+    return delta_sam
+
+#Add columns to the dataframes for both the fraction (first function above) and the delta value of the sample (second function)
+min_conc = min(df['[CO2]_ppm'])
+fraction_list = [frac_calc(a, min_conc) for a in df['[CO2]_ppm']]
+df['frac_sam'] = fraction_list
+delta_list = [delta_calc(a, carrier_gas, b) for a, b in (df['d13C'], df['frac_sam'])]

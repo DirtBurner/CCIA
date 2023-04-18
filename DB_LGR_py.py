@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.lines as mlines
 
 print('%%%%%%%%% Dirtburner - Flow-through LGR Data Visualization %%%%%%%%%%%%')
 
@@ -123,9 +124,10 @@ def view_concentrations(ccia_df, db_df, begin_timestamp, end_timestamp, time_off
 
     return ax1
 
-def compare_CCIA(runs, timestamps, colors):
+def compare_CCIA(runs, timestamps, colors, legend_labels):
 
     fig, ax = plt.subplots(nrows=1, ncols=1)
+    label_list = []
     for j, run in enumerate(runs):
         #import each run
         df = import_LGR(run)
@@ -136,5 +138,11 @@ def compare_CCIA(runs, timestamps, colors):
         #Calculate elapsed time
         masked_df.loc[:, 'Elapsed Time'] = [pd.Timedelta(time-masked_df['Time'].iloc[0], unit='seconds').total_seconds() for time in masked_df['Time']]
         ax.plot(masked_df['Elapsed Time'], masked_df['d13C'], color=colors[j])
+        #Create legend label list
+        label_list.append(mlines.Line2D([], [], color=colors[j], label=legend_labels[j]))
+
+    ax.set_xlabel('Elapsed time, s')
+    ax.set_ylabel(r'$\delta^{13}$C, relative')
+    plt.legend(handles=label_list)
     
     return ax
