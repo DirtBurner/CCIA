@@ -61,72 +61,27 @@ CO2_view = dblgr.view_concentrations(ccia_df, db_df, begin, end, 0)
 # Given that the data streams above qualitatively match, we will use mainly LGR data below. Using the LGR data ensures that the isotope and concentration data match point for point because they were recorded in the same instrument. It also simplifies comparisons in terms of time, however we will need to use elapsed time. We may need to access temperature too, if timings are not well recorded in the run sheets, but we'll cross that bridge when we come to it. Crossing 2 data streams is not always easy, in fact it is almost always troublesome.
 
 # %%
-#Plot the isotope trends from two runs
-
-#Import the two runs you want to compare, and name the dataframes descriptively to avoid confusion:
-db_2274_ccia_df = dblgr.import_LGR('ccia_10Feb2023_f0000.txt')
-db_2275_ccia_df = dblgr.import_LGR('ccia_16Feb2023_f0000.txt')
-db_2277_ccia_df = dblgr.import_LGR('ccia_28Mar2023_f0000.txt')
-db_2278_ccia_df = dblgr.import_LGR('ccia_06Apr2023_f0001.txt')
-print(db_2278_ccia_df.head())
-print('Step 1 completed at ', datetime.now())
-
-#Define beginning and end of each run:
-begin_2275 = pd.to_datetime('2023-02-16 10:50:00') 
-end_2275 = pd.to_datetime('2023-02-16 13:00:00')
+#Set timestamps for beginning and end of each reaction you want to plot - no way around this, this has to come from your lab book and then has
+#to be tuned based on the plots. 
 begin_2274 = pd.to_datetime('2023-02-10 09:52:00')
-end_2274 = pd.to_datetime('2023-02-10 11:34:00')
-begin_2277 = pd.to_datetime('2023-03-28 08:40:00')
-end_2277 = pd.to_datetime('2023-03-28 10:40:00')
+end_2274 = pd.to_datetime('2023-02-16 11:34:00')
+begin_2275 = pd.to_datetime('2023-02-16 10:50:00')
+end_2275 = pd.to_datetime('2023-03-28 08:40:00')
+begin_2277 = pd.to_datetime('2023-03-28 10:40:00')
+end_2277 = pd.to_datetime('2023-03-28 13:00:00')
 begin_2278 = pd.to_datetime('2023-04-06 10:33:00')
 end_2278 = pd.to_datetime('2023-04-06 13:00:00')
-print('Step 2 completed at ', datetime.now())
 
-#Mask the data from each run that you want to visualize
-db_2274_ccia_run_df = db_2274_ccia_df.loc[(db_2274_ccia_df['Time']>begin_2274) & (db_2274_ccia_df['Time']<end_2274)]
-db_2275_ccia_run_df = db_2275_ccia_df.loc[(db_2275_ccia_df['Time']>begin_2275) & (db_2275_ccia_df['Time']<end_2275)]
-db_2277_ccia_run_df = db_2277_ccia_df.loc[(db_2277_ccia_df['Time']>begin_2277) & (db_2277_ccia_df['Time']<end_2277)]
-db_2278_ccia_run_df = db_2278_ccia_df.loc[(db_2278_ccia_df['Time']>begin_2278) & (db_2278_ccia_df['Time']<end_2278)]
-print(db_2278_ccia_run_df.head())
-print('Step 2.5 completed at ', datetime.now())
-db_2274_ccia_run_df.loc[:, 'Elapsed Time'] = [pd.Timedelta(time-db_2274_ccia_run_df['Time'].iloc[0], unit='seconds').total_seconds() for time in db_2274_ccia_run_df['Time']]
-db_2275_ccia_run_df.loc[:, 'Elapsed Time'] = [pd.Timedelta(time-db_2275_ccia_run_df['Time'].iloc[0], unit='seconds').total_seconds() for time in db_2275_ccia_run_df['Time']]
-db_2277_ccia_run_df.loc[:, 'Elapsed Time'] = [pd.Timedelta(time-db_2277_ccia_run_df['Time'].iloc[0], unit='seconds').total_seconds() for time in db_2277_ccia_run_df['Time']]
-db_2278_ccia_run_df.loc[:, 'Elapsed Time'] = [pd.Timedelta(time-db_2278_ccia_run_df['Time'].iloc[0], unit='seconds').total_seconds() for time in db_2278_ccia_run_df['Time']]
-print('Step 3 completed at ', datetime.now())
+#Use function to compare runs. Create lists of run files, timestamps, colors (that you want to plot), and legend labels, making sure they are in the same order
+runs = ['ccia_10Feb2023_f0000.txt','ccia_16Feb2023_f0000.txt','ccia_28Mar2023_f0000.txt','ccia_06Apr2023_f0001.txt']
+timestamps = [(begin_2274, end_2274), (begin_2275, end_2275), (begin_2277, end_2277), (begin_2278, end_2278)]
+colors = ['gold', 'darkgreen', 'purple', 'plum']
+legend_labels = [r'DB-2274, 211$\mu$mol, 15.03 Torr', r'DB-2275, 227$\mu$mol, 8 Torr', r'DB-2277, open split 75 mL/min', r'DB-2278, open split 125 mL/min']
 
-#Plot the d13C data on those elapsed time axes:
-fig2, ax2 = plt.subplots()
-ax2.plot(db_2274_ccia_run_df['Elapsed Time'], db_2274_ccia_run_df['d13C'], color='gold')
-ax2.plot(db_2275_ccia_run_df['Elapsed Time'], db_2275_ccia_run_df['d13C'], color='darkgreen')
-ax2.plot(db_2277_ccia_run_df['Elapsed Time'], db_2277_ccia_run_df['d13C'], color='purple')
-ax2.plot(db_2278_ccia_run_df['Elapsed Time'], db_2278_ccia_run_df['d13C'], color='plum')
-#Set up legend artists
-DB2274_line = mlines.Line2D([], [], color='gold', label=r'DB-2274, 211$\mu$mol, 15.03 Torr')
-DB2275_line = mlines.Line2D([], [], color='darkgreen', label=r'DB-2275, 227$\mu$mol, 8 Torr')
-DB2277_line = mlines.Line2D([], [], color='purple', label=r'DB-2277, open split 75 mL/min')
-DB2278_line = mlines.Line2D([], [], color='plum', label=r'DB-2278, open split 125 mL/min')
-plt.grid(axis='x', which='both')
-plt.legend(handles=[DB2274_line, DB2275_line, DB2277_line, DB2278_line])
-ax2.set(ylabel=r'$\delta ^{13}C$, relative', xlabel='Elapsed time, s')
-print('Step 4 completed at ', datetime.now())
+#Use new function to plot runs comparatively, note use of keyword argument to change from the default of a d13C plot
+ax1 = dblgr.compare_CCIA(runs, timestamps, colors, legend_labels)
+ax2 = dblgr.compare_CCIA(runs, timestamps, colors, legend_labels, column_name='[CO2]_ppm')
 
-#plt.savefig('C:/Users/brosenheim/Box/UDrive_brosenheim/My_Documents/Research/Laboratory/LGR CCIA/DB2274-5-7-8_ChokeValve_OpenSplitComparison.svg')
-
-
-# %%
-#Plot the d13C data on those elapsed time axes:
-fig3, ax3 = plt.subplots()
-ax3.plot(db_2274_ccia_run_df['Elapsed Time'], db_2274_ccia_run_df['[CO2]_ppm'], color='gold')
-ax3.plot(db_2275_ccia_run_df['Elapsed Time'], db_2275_ccia_run_df['[CO2]_ppm'], color='darkgreen')
-ax3.plot(db_2277_ccia_run_df['Elapsed Time'], db_2277_ccia_run_df['[CO2]_ppm'], color='purple')
-ax3.plot(db_2278_ccia_run_df['Elapsed Time'], db_2278_ccia_run_df['[CO2]_ppm'], color='plum')
-
-plt.legend(handles=[DB2274_line, DB2275_line, DB2277_line, DB2278_line])
-plt.grid(axis='x', which='both')
-ax3.set(ylabel=r'[CO$_2$], ppm', xlabel='Elapsed time, s')
-
-#plt.savefig('C:/Users/brosenheim/Box/UDrive_brosenheim/My_Documents/Research/Laboratory/LGR CCIA/DB2274-5-7-8_ChokeValveComparison_opensplit_concentrations.svg')
 
 # %% [markdown]
 # ## Interpretation
@@ -139,31 +94,6 @@ ax3.set(ylabel=r'[CO$_2$], ppm', xlabel='Elapsed time, s')
 # The concentration data are less noisy than the isotope data. The peaks line up nicely once the starting time for each reaction is accurate. Similarly to the isotope data, the baseline is shifted in the run where we choked the outlet valve. In this case, the baseline is elevated. Does this make sense? We did not change the rate of supply of products from the reaction, nor did we change the reaction. Effectively, by decreasing the pump conductance by choking the outlet valve, we increased the pressure and the residence time of CO<sub>2</sub> molecules in the optical cell. However, the same can be said of He atoms. So, how did the concentrations increase for run DB-2275? We will need to see how the open split affects this moving forward in order to better understand it. A question of high importance is whether this elevated concentration baseline relates to the decreased isotope baseline in run DB-2275. 
 
 # %%
-#Use function to compare runs. Create lists of run files, timestamps, colors (that you want to plot), and legend labels, making sure they are in the same order
-runs = ['ccia_10Feb2023_f0000.txt','ccia_16Feb2023_f0000.txt','ccia_28Mar2023_f0000.txt','ccia_06Apr2023_f0001.txt']
-timestamps = [(begin_2274, end_2274), (begin_2275, end_2275), (begin_2277, end_2277), (begin_2278, end_2278)]
-colors = ['gold', 'darkgreen', 'purple', 'plum']
-legend_labels = [r'DB-2274, 211$\mu$mol, 15.03 Torr', r'DB-2275, 227$\mu$mol, 8 Torr', r'DB-2277, open split 75 mL/min', r'DB-2278, open split 125 mL/min']
-ax1 = dblgr.compare_CCIA(runs, timestamps, colors, legend_labels)
+df = dblgr.import_LGR('ccia_06Apr2023_f0001.txt')
+_, _, new_df = dblgr.isotope_concentration_plot(df, -40, 2, 2.75, (begin_2278, end_2278),color_map='plasma', null_color='k')
 
-
-# %%
-#Concentration plot with colors for isotope values
-df = db_2278_ccia_run_df
-carrier_gas = -70
-#Calculate the concentration of each point based on input of baseline concentration - two functions
-def frac_calc(CO2_conc, bkgnd_conc):
-    frac_sam = (CO2_conc-bkgnd_conc)/CO2_conc
-
-    return frac_sam
-
-def delta_calc(delta_meas, baseline, f_sam):
-    delta_sam = (delta_meas - baseline)/f_sam - baseline
-
-    return delta_sam
-
-#Add columns to the dataframes for both the fraction (first function above) and the delta value of the sample (second function)
-min_conc = min(df['[CO2]_ppm'])
-fraction_list = [frac_calc(a, min_conc) for a in df['[CO2]_ppm']]
-df['frac_sam'] = fraction_list
-delta_list = [delta_calc(a, carrier_gas, b) for a, b in (df['d13C'], df['frac_sam'])]

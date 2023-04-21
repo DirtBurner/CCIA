@@ -124,25 +124,138 @@ def view_concentrations(ccia_df, db_df, begin_timestamp, end_timestamp, time_off
 
     return ax1
 
-def compare_CCIA(runs, timestamps, colors, legend_labels):
+def compare_CCIA(runs, timestamps, colors, legend_labels, column_name='d13C'):
+    '''
+    Function to compare different CCIA runs. User chooses colors, run files, timestamps, and column to plot. Function
+    computes elapsed time for each run and plots on time axis. DB data files are not used, this should only be pointed 
+    at CCIA files. 
+
+        Inputs:
+            runs (list of strings): List of file names, including extension, of the files (runs) you want to compare
+            timestamps (list of tuples of strings): List of tuples, each containing the begin time and end time of a reaction
+                entered as strings. Format should be 2023-02-10 09:52:00 (YYYY-MM-DD HH:mm:SS). 
+            colors (list of strings): Strings for named colors in python Matplotlib
+            legend_labels (list of strings): String to describe each run as you want in the figure legend.
+            col (string): column you wish to plot. Columns must match those available in call to df.columns function, or will default
+                to plotting the d13C column
+    '''
 
     fig, ax = plt.subplots(nrows=1, ncols=1)
     label_list = []
     for j, run in enumerate(runs):
         #import each run
         df = import_LGR(run)
+        if column_name not in df.columns:
+            print('!! Specified column, ', column_name, ', is not in ', run, '. Defaulting to plot of d13C vs. elapsed time for this run. !!')
+            plot_column = 'd13C'
+        else:
+            plot_column = column_name
         #set up begin and end
         begin = pd.to_datetime(timestamps[j][0]) 
         end = pd.to_datetime(timestamps[j][1])
         masked_df = df.loc[(df['Time']>begin) & (df['Time']<end)]
         #Calculate elapsed time
         masked_df.loc[:, 'Elapsed Time'] = [pd.Timedelta(time-masked_df['Time'].iloc[0], unit='seconds').total_seconds() for time in masked_df['Time']]
-        ax.plot(masked_df['Elapsed Time'], masked_df['d13C'], color=colors[j])
+        ax.plot(masked_df['Elapsed Time'], masked_df[plot_column], color=colors[j])
         #Create legend label list
         label_list.append(mlines.Line2D([], [], color=colors[j], label=legend_labels[j]))
 
+    #Choose column name:
+    if column_name == 'd13C':
+        y_label = r'$\delta^{13}$C, relative'
+    elif column_name == '[CO2]_ppm':
+        y_label = r'[CO$_{2}$], ppm'
+    else:
+        y_label = column_name
     ax.set_xlabel('Elapsed time, s')
-    ax.set_ylabel(r'$\delta^{13}$C, relative')
+    ax.set_ylabel(y_label)
     plt.legend(handles=label_list)
     
     return ax
+
+def frac_calc(CO2_conc, bkgnd_conc):
+    '''
+    Calculate the fraction of the gas that was sample after subtracting that which is the carrier gas
+        Inputs:
+            CO2_conc (float): the concentration data from the LGR-CCIA
+            bkgnd_conc (float, constant): the concentration of CO2 that represents no sample gas mixed in, generally the minimum of the 
+                concentration from the LGR-CCIA data
+        Outputs:
+            frac_sam (float): number between 0 and 1 representing the proportion of sample
+    '''
+    frac_sam = (CO2_conc-bkgnd_conc)/CO2_conc
+
+    return frac_sam
+
+def delta_calc(delta_meas, baseline, f_sam):
+    '''
+    Calculate the delta value of the sample based on the assumed/know delta value of the carrier gas, the fraction of sample, and the measured
+    delta value from the LGR-CCIA data
+        Inputs:
+            delta_meas (float): isotope data from the LGR-CCIA data file
+            baseline (float, constant): assumed or measured stable isotope value of the carrier gas
+            f_sam (float): output of frac_calc function, fraction of the sample in the [CO2] concentration
+        Outputs: delta_sam (float): calculated delta value of the sample mixed with the carrier gas 
+    '''
+    if f_sam <= 0:
+        delta_sam = baseline
+    else:
+        delta_sam = (delta_meas - baseline)/f_sam - baseline
+
+    return delta_sam
+
+def isotope_concentration_plot(df, delta_baseline, delta_meas_uncertainty, delta_calc_threshold, timestamps, color_map='plasma', null_color='k'):
+    '''
+    Plots a concentration vs. time plot, and colors the points with calculated isotope values. The calculation of 
+    isotope values depends on an assumption that the minimum concentration of the run is the baseline value
+    and any elevation in [CO2] is due to admixture of the sample. The calculation involves the fraction of sample
+    in the denominator, so at low values (just above baseline), the calculated isotope values can be 
+    erroneously high. To avoid this, the function asks you to enter the uncertainty on isotope measurements
+    as well as what uncertainty you are willing to work with on the calculation. The lower the concentration, the
+    higher the uncertainty with this instrument. The value you pick for delta_calc_threshold would be positive,
+    and always moe than delta_meas_uncertainty. The closer these values are to one another, the more
+    data will be masked black. 
+        Inputs:
+            df (dataframe): Dataframe loaded from the import_LGR function
+            delta_meas_uncertainty (float): Assumed or known uncertainty on an isotope measurement of the LGR-CCIA
+            delta_calc_threshold (float): Your level of acceptable uncertainty (in permil) of the calculated 
+                isotope value of the sample. 
+            timestamps (tuple of strings): a tuple in the form of (begin, end) where both beginning and end
+                are strings in the format of YYYY-MM-DD HH:mm:SS
+            color_map (matplotlib color map, string): a string representing the desired existing colormap
+                recognized by matplotlib.pyplot. Default is plasma
+            null_color (single matplotlib color string): string representing a single named color in Python
+                This color will mark the points that have uncertainties beyond your threshold. Default = k
+        
+
+    '''
+    #Add columns to the dataframes for both the fraction (first function above) and the delta value of the sample (second function)
+    min_conc = min(df['[CO2]_ppm'])
+    fraction_list = [frac_calc(a, min_conc) for a in df['[CO2]_ppm']]
+    df.loc[:,['frac_sam']] = fraction_list
+    delta_list = [delta_calc(a, delta_baseline, b) for a, b in zip(df['d13C'], df['frac_sam'])]
+    df.loc[:,['delta_sam']] = delta_list
+    #Calculate elapsed time and make new column
+    begin = pd.to_datetime(timestamps[0]) 
+    end = pd.to_datetime(timestamps[1])
+    masked_df = df.loc[(df['Time']>begin) & (df['Time']<end)]
+    masked_df.loc[:, 'Elapsed Time'] = [pd.Timedelta(time-masked_df['Time'].iloc[0], unit='seconds').total_seconds() for time in masked_df['Time']]
+
+    #Split dataframe into that which can be plotted as an isotope value, and that which cannot
+    iso_df = masked_df.loc[delta_meas_uncertainty/df['frac_sam']<delta_calc_threshold]
+    debug(iso_df['frac_sam'].shape)
+    no_iso_df = masked_df.loc[delta_meas_uncertainty/df['frac_sam']>=delta_calc_threshold]
+    debug(no_iso_df['frac_sam'].shape)
+    df_out = df
+
+    #Plot concentrations, colored with isotope values (values with uncertainties > delta_calc_threshold are black dots)
+    scat_fig, scat_ax = plt.subplots(nrows=1, ncols=1)
+    g = scat_ax.scatter(iso_df['Elapsed Time'], iso_df['[CO2]_ppm'], s=10, c=iso_df['delta_sam'], cmap=color_map)
+    scat_ax.plot(no_iso_df['Elapsed Time'], no_iso_df['[CO2]_ppm'], marker='.', mec=null_color, linestyle='', mfc='None')
+    #scat_ax.annotate(r'Carrier gas $\delta^{13}$C = ' + str(delta_baseline) + '/n', )
+    cbar = scat_fig.colorbar(g)
+    scat_ax.set_ylabel(r'[CO$_{2}$], ppm')
+    scat_ax.set_xlabel('Elapsed time, s')
+    cbar.set_label(r'$\delta^{13}$C, calculated')
+
+    return scat_ax, cbar, df_out
