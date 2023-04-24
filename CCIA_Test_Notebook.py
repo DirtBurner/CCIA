@@ -95,5 +95,7 @@ ax2 = dblgr.compare_CCIA(runs, timestamps, colors, legend_labels, column_name='[
 
 # %%
 df = dblgr.import_LGR('ccia_06Apr2023_f0001.txt')
-_, _, new_df = dblgr.isotope_concentration_plot(df, -40, 2, 2.75, (begin_2278, end_2278),color_map='plasma', null_color='k')
+_, _, new_df = dblgr.isotope_concentration_plot(df, 13, 2, 2.75, (begin_2278, end_2278),color_map='plasma', null_color='k')
 
+
+# %%
